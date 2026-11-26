@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visor BIM GeoIAN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: herramienta de laboratorio, clara y directa, para estudiantes de topografía
+   IDEA: la mesa de un visor BIM profesional: modelo al centro, árbol de clases a la izquierda, ficha IFC a la derecha
+   PICTURE: el propio modelo 3D ocupa casi toda la pantalla
+   COLOUR and TYPE: marca GeoIAN: cian de curvas de nivel #0098B8, naranja IA #E8700A, tinta #10202A; Archivo + Inter
+   LAYOUT: barra de modelos arriba, tres columnas en escritorio; en móvil el visor primero y los paneles debajo */
+:root{color-scheme:light dark;--bg:light-dark(#F4F7F9,#0C1419);--panel:light-dark(#FFFFFF,#142129);--ink:light-dark(#10202A,#E6EEF2);--mute:light-dark(#5B6B75,#93A6B0);--line:light-dark(#DCE4E9,#24343E);--cyan:#0098B8;--orange:#E8700A;--canvas:light-dark(#E9EFF2,#0F1A20)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif;overflow-x:clip}
+header{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font:800 20px/1 Archivo,sans-serif;letter-spacing:.2px}
+.brand b{color:var(--cyan)}.brand i{color:var(--orange);font-style:normal}
+.brand small{font:500 13px Inter;color:var(--mute)}
+.models{display:flex;gap:8px;overflow-x:auto;flex:1;padding:2px}
+.models button{flex:none}
+button,select{font:600 14px Inter,sans-serif;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--cyan)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+button.on{background:var(--cyan);border-color:var(--cyan);color:#fff}
+button.tool.on{background:var(--orange);border-color:var(--orange)}
+main{display:grid;grid-template-columns:260px minmax(0,1fr) 320px;height:calc(100vh - 62px)}
+aside{background:var(--panel);overflow:auto;padding:14px;border-right:1px solid var(--line)}
+aside.r{border-right:0;border-left:1px solid var(--line)}
+h2{font:700 15px Archivo,sans-serif;margin:4px 0 10px;color:var(--ink)}
+.stage{position:relative;background:var(--canvas)}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.tools{position:absolute;left:12px;top:12px;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 24px)}
+.tools button{background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(4px)}
+.cut{position:absolute;left:12px;bottom:12px;right:12px;display:none;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 14px}
+.cut.show{display:flex}.cut input{flex:1;accent-color:var(--orange)}
+.msg[hidden]{display:none}.msg{position:absolute;inset:0;display:grid;place-items:center;font:600 16px Inter;color:var(--mute);pointer-events:none;text-align:center;padding:20px}
+.cls{display:flex;align-items:center;gap:8px;padding:6px 4px;border-radius:8px;cursor:pointer}
+.cls:hover{background:var(--bg)}
+.cls input{width:18px;height:18px;accent-color:var(--cyan)}
+.sw{width:14px;height:14px;border-radius:4px;flex:none;border:1px solid #0002}
+.cls span.n{margin-left:auto;color:var(--mute);font-variant-numeric:tabular-nums}
+.cls .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row{display:flex;gap:6px;margin:8px 0 12px;flex-wrap:wrap}
+.row button{flex:1;min-height:36px;font-size:13px}
+.meta{font-size:13px;color:var(--mute);border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.meta a{color:var(--cyan)}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.big{font:800 22px/1.1 Archivo,sans-serif;color:var(--cyan);margin:2px 0 4px;overflow-wrap:anywhere}
+.k{color:var(--mute);font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td{padding:5px 4px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
+td:first-child{color:var(--mute);width:45%}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.ps{font:700 12px Inter;color:var(--orange);margin:12px 0 4px}
+.measure{font:800 26px Archivo;color:var(--orange)}
+.hint{font-size:13px;color:var(--mute)}
+@media(max-width:900px){main{grid-template-columns:1fr;height:auto}.stage{height:62vh}aside{border:0;border-top:1px solid var(--line)}aside.l{order:2}aside.r{order:3}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span><b>GEO</b><i>IA</i>N</span><small>Visor BIM · TPO204 AIEP</small></div>
+  <nav class="models" id="models"></nav>
+</header>
+<main>
+  <aside class="l">
+    <h2>Clases IFC del modelo</h2>
+    <div class="row"><button id="all">Ver todas</button><button id="none">Ocultar todas</button></div>
+    <div class="row"><button id="byClass">Color por clase</button><button id="byMat" class="on">Color real</button></div>
+    <div id="classes"><p class="hint">Elige un modelo arriba.</p></div>
+    <div class="meta" id="meta"></div>
+  </aside>
+  <section class="stage">
+    <canvas id="c"></canvas>
+    <div class="tools">
+      <button id="home" title="Volver a la vista inicial">Vista inicial</button>
+      <button id="top" title="Ver en planta">Planta</button>
+      <button id="cutBtn" class="tool" title="Corte horizontal">Corte</button>
+      <button id="measBtn" class="tool" title="Medir distancia entre dos puntos">Medir</button>
+      <button id="xray" class="tool" title="Transparencia">Rayos X</button>
+    </div>
+    <div class="cut" id="cut"><span>Altura de corte</span><input type="range" id="cutH" min="0" max="1000" value="1000"><span id="cutV">—</span></div>
+    <div class="msg" id="msg">Cargando visor…</div>
+  </section>
+  <aside class="r">
+    <h2>Ficha del elemento</h2>
+    <div id="props"><p class="hint">Haz clic sobre un objeto del modelo para ver su clase IFC, nivel, material y propiedades.</p></div>
+    <div class="card" id="measCard" hidden><div class="k">Distancia medida</div><div class="measure" id="measV">—</div><div class="hint" id="measD"></div></div>
+    <div class="card"><div class="k">Cómo se usa</div><p class="hint" style="margin:4px 0 0">Girar: clic izquierdo y arrastrar · Desplazar: clic derecho · Zoom: rueda. En el celular: un dedo gira, dos dedos acercan y desplazan.</p></div>
+  </aside>
+</main>
+<script type="importmap">
+{"imports":{"three":"./lib/three/build/three.module.js","three/addons/":"./lib/three/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+{
+const MODELS = [
+  { id:'duplex', name:'Dúplex (Revit · IFC2x3)', files:['duplex'], src:'Modelo de muestra Duplex Apartment (proyecto de referencia usado por buildingSMART y NIBS), exportado desde Revit.' },
+  { id:'casa', name:'Casa (IFC4)', files:['casa_ifc4'], src:'Casa de muestra IFC4 (colección IfcSampleFiles, GitHub).' },
+  { id:'fed', name:'Proyecto federado (IFC 4.3)', files:['ss_building_architecture','ss_building_structural','ss_building_hvac','ss_building_landscaping','ss_infra_bridge','ss_infra_road','ss_infra_rail','ss_infra_plumbing','ss_infra_electrical'], src:'buildingSMART International, IFC 4.3 Sample "Simple Scene": casa, terreno, camino, puente, ferrocarril, alcantarillado y electricidad.' },
+  { id:'revit', name:'Edificio Revit ARQ + EST (pesado)', files:['revit_arc','revit_str'], color:'cls', src:'Modelo de muestra de Autodesk Revit exportado a IFC4, arquitectura y estructura (colección IfcSampleFiles, GitHub).' },
+  { id:'aromos', name:'Los Aromos (curso)', files:['losaromos'], color:'cls', src:'Modelo propio del curso: nube LiDAR clasificada de la clase 10 convertida en MDT y volúmenes LOD1.' },
+];
+const ES = {IfcWall:'Muro',IfcWallStandardCase:'Muro',IfcSlab:'Losa',IfcWindow:'Ventana',IfcDoor:'Puerta',IfcRoof:'Techo',IfcBeam:'Viga',IfcColumn:'Columna',IfcFooting:'Fundación',IfcMember:'Elemento lineal',IfcPlate:'Placa',IfcCovering:'Revestimiento',IfcRailing:'Baranda',IfcStair:'Escalera',IfcStairFlight:'Tramo de escalera',IfcFurniture:'Mobiliario',IfcFurnishingElement:'Mobiliario',IfcDuctSegment:'Ducto',IfcAirTerminal:'Difusor de aire',IfcPipeSegment:'Tubería',IfcDistributionChamberElement:'Cámara',IfcChimney:'Chimenea',IfcEarthworksFill:'Relleno de tierra',IfcGeographicElement:'Terreno / elemento geográfico',IfcBuildingElementProxy:'Elemento genérico',IfcCourse:'Capa de pavimento',IfcRoadPart:'Parte de camino',IfcSurfaceFeature:'Demarcación',IfcTrackElement:'Elemento de vía',IfcRail:'Riel',IfcSign:'Señal',IfcElectricAppliance:'Equipo eléctrico',IfcDiscreteAccessory:'Accesorio',IfcFlowTerminal:'Terminal',IfcFlowSegment:'Segmento de flujo',IfcBearing:'Apoyo',IfcPile:'Pilote',IfcRamp:'Rampa'};
+const PAL = ['#0098B8','#E8700A','#6A1B9A','#1E88E5','#C2185B','#00897B','#8D6E63','#5C6BC0','#D81B60','#43A047','#F4511E','#546E7A','#7CB342','#3949AB','#FB8C00','#26A69A'];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const canvas = $('c'), stage = canvas.parentElement;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.localClippingEnabled = true;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100000);
+const controls = new OrbitControls(camera, canvas); controls.enableDamping = true;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 1.4); sun.position.set(1, 2, 1.5); scene.add(sun);
+const clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6);
+let root = null, props = {}, byClass = {}, classColor = {}, colorMode = 'mat', selected = null, box = null, home = null;
+const loader = new GLTFLoader();
+const selMat = new THREE.MeshStandardMaterial({ color: 0xE8700A, emissive: 0x552200, side: THREE.DoubleSide, clippingPlanes: [clip] });
+
+function resize(){ const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+const ro = new ResizeObserver(resize); ro.observe(stage);
+
+$('models').innerHTML = MODELS.map(m => `<button data-id="${m.id}">${esc(m.name)}</button>`).join('');
+$('models').addEventListener('click', e => { const b = e.target.closest('button'); if (b) load(b.dataset.id); });
+
+async function load(id){
+  const M = MODELS.find(m => m.id === id);
+  document.querySelectorAll('#models button').forEach(b => b.classList.toggle('on', b.dataset.id === id));
+  $('msg').textContent = 'Cargando ' + M.name + '…'; $('msg').hidden = false;
+  if (root){ scene.remove(root); root.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
+  root = new THREE.Group(); scene.add(root); props = {}; byClass = {}; selected = null; showProps(null);
+  const meta = [];
+  try {
+    for (const f of M.files){
+      const [g, j] = await Promise.all([fetch('data/' + f + '.gltf.json').then(r => r.text()).then(t => loader.parseAsync(t, '')), fetch('data/' + f + '.json').then(r => r.json())]);
+      Object.assign(props, j.el); meta.push(j.meta);
+      g.scene.traverse(o => {
+        if (!o.isMesh) return;
+        if (!o.geometry.attributes.normal) o.geometry.computeVertexNormals();
+        const guid = props[o.name] ? o.name : (props[o.parent?.name] ? o.parent.name : o.name);
+        const p = props[guid] || { c: 'Desconocido', n: '' };
+        o.userData.guid = guid; o.userData.cls = p.c;
+        const glass = /Window|Plate/.test(p.c);
+        o.userData.mat = new THREE.MeshStandardMaterial({ vertexColors: !!o.geometry.attributes.color, color: o.geometry.attributes.color ? 0xffffff : 0xcfd8dc, roughness: .85, metalness: 0, side: THREE.DoubleSide, transparent: glass, opacity: glass ? .45 : 1, clippingPlanes: [clip], polygonOffset: true, polygonOffsetFactor: 1 });
+        o.material = o.userData.mat;
+        (byClass[p.c] ||= []).push(o);
+      });
+      root.add(g.scene);
+    }
+  } catch (err) { $('msg').textContent = 'No se pudo cargar el modelo. Revisa tu conexión y recarga la página.'; return; }
+  box = new THREE.Box3().setFromObject(root); const c = box.getCenter(new THREE.Vector3());
+  root.position.sub(c); box = new THREE.Box3().setFromObject(root);
+  Object.keys(byClass).sort().forEach((k, i) => classColor[k] ||= PAL[Object.keys(classColor).length % PAL.length]);
+  colorMode = M.color || 'mat'; $('byClass').classList.toggle('on', colorMode === 'cls'); $('byMat').classList.toggle('on', colorMode !== 'cls');
+  renderClasses(); applyColors(); fit(); setCut();
+  const total = Object.values(byClass).reduce((a, b) => a + b.length, 0);
+  $('meta').innerHTML = `<b>${total}</b> elementos · ${esc([...new Set(meta.map(m => m.schema))].join(', '))}<br>${esc(M.src)}`;
+  $('msg').hidden = true;
+}
+
+function renderClasses(){
+  const ks = Object.keys(byClass).sort((a, b) => byClass[b].length - byClass[a].length);
+  $('classes').innerHTML = ks.map(k => `<label class="cls"><input type="checkbox" checked data-c="${esc(k)}"><span class="sw" style="background:${classColor[k]}"></span><span class="lbl" title="${esc(k)}">${esc(ES[k] || k.replace('Ifc',''))}<br><span class="k">${esc(k)}</span></span><span class="n">${byClass[k].length}</span></label>`).join('');
+}
+$('classes').addEventListener('change', e => { const c = e.target.dataset.c; if (c) byClass[c].forEach(o => o.visible = e.target.checked); });
+$('all').onclick = () => setAll(true); $('none').onclick = () => setAll(false);
+function setAll(v){ document.querySelectorAll('#classes input').forEach(i => i.checked = v); Object.values(byClass).flat().forEach(o => o.visible = v); }
+$('byClass').onclick = () => { colorMode = 'cls'; $('byClass').classList.add('on'); $('byMat').classList.remove('on'); applyColors(); };
+$('byMat').onclick = () => { colorMode = 'mat'; $('byMat').classList.add('on'); $('byClass').classList.remove('on'); applyColors(); };
+const clsMats = {};
+function applyColors(){
+  const xr = $('xray').classList.contains('on');
+  for (const [k, list] of Object.entries(byClass)) for (const o of list){
+    if (o === selected) continue;
+    let m = o.userData.mat;
+    if (colorMode === 'cls'){ m = clsMats[k] ||= new THREE.MeshStandardMaterial({ color: classColor[k], roughness: .8, side: THREE.DoubleSide, clippingPlanes: [clip], polygonOffset: true, polygonOffsetFactor: 1 }); }
+    if (xr){ m = m.clone(); m.transparent = true; m.opacity = .18; m.depthWrite = false; }
+    o.material = m;
+  }
+}
+$('xray').onclick = () => { $('xray').classList.toggle('on'); applyColors(); };
+
+function fit(dir = new THREE.Vector3(1, .8, 1.2)){
+  const s = box.getSize(new THREE.Vector3()), r = Math.max(s.x, s.y, s.z) || 10, c = box.getCenter(new THREE.Vector3());
+  camera.near = r / 1000; camera.far = r * 50; camera.updateProjectionMatrix();
+  camera.position.copy(c).add(dir.normalize().multiplyScalar(r * 1.4)); controls.target.copy(c); controls.update();
+}
+$('home').onclick = () => box && fit();
+$('top').onclick = () => box && fit(new THREE.Vector3(0.001, 1, 0.001));
+
+$('cutBtn').onclick = () => { const on = $('cutBtn').classList.toggle('on'); $('cut').classList.toggle('show', on); if (!on){ $('cutH').value = 1000; } setCut(); };
+$('cutH').oninput = setCut;
+function setCut(){
+  if (!box) return; const t = $('cutH').value / 1000; const y = box.min.y + (box.max.y - box.min.y) * t;
+  clip.constant = $('cutBtn').classList.contains('on') ? y : 1e6;
+  $('cutV').textContent = (y - box.min.y).toFixed(2) + ' m';
+}
+
+// selección y medición
+const ray = new THREE.Raycaster(), ptr = new THREE.Vector2(); let down = null, measuring = false, mpts = [], mObjs = [];
+$('measBtn').onclick = () => { measuring = $('measBtn').classList.toggle('on'); clearMeasure(); $('measCard').hidden = !measuring; $('measV').textContent = '—'; $('measD').textContent = measuring ? 'Haz clic en el primer punto.' : ''; };
+canvas.addEventListener('pointerdown', e => down = [e.clientX, e.clientY]);
+canvas.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5 || !root) return;
+  const r = canvas.getBoundingClientRect(); ptr.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+  ray.setFromCamera(ptr, camera);
+  const hit = ray.intersectObjects(root.children, true).find(h => h.object.visible && h.object.isMesh && (h.point.y <= clip.constant + 1e-6));
+  if (measuring){ if (hit) addMeasure(hit.point); return; }
+  select(hit ? hit.object : null);
+});
+function marker(p){ const s = Math.max(...box.getSize(new THREE.Vector3()).toArray()) / 150; const m = new THREE.Mesh(new THREE.SphereGeometry(s, 16, 12), new THREE.MeshBasicMaterial({ color: 0xE8700A, depthTest: false })); m.position.copy(p); m.renderOrder = 9; scene.add(m); mObjs.push(m); }
+function addMeasure(p){
+  if (mpts.length === 2) clearMeasure();
+  mpts.push(p.clone()); marker(p);
+  if (mpts.length === 2){
+    const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(mpts), new THREE.LineBasicMaterial({ color: 0xE8700A, depthTest: false })); l.renderOrder = 9; scene.add(l); mObjs.push(l);
+    const d = mpts[0].distanceTo(mpts[1]), dz = Math.abs(mpts[1].y - mpts[0].y), dh = Math.hypot(mpts[1].x - mpts[0].x, mpts[1].z - mpts[0].z);
+    $('measV').textContent = d.toFixed(3) + ' m'; $('measD').textContent = `Horizontal ${dh.toFixed(3)} m · Desnivel ${dz.toFixed(3)} m`;
+  } else $('measD').textContent = 'Ahora el segundo punto.';
+}
+function clearMeasure(){ mObjs.forEach(o => scene.remove(o)); mObjs = []; mpts = []; }
+
+function select(o){
+  if (selected){ const s = selected; selected = null; applyColors(); }
+  selected = o; if (o) o.material = selMat; showProps(o ? props[o.userData.guid] : null, o?.userData.guid);
+}
+function showProps(p, guid){
+  if (!p){ $('props').innerHTML = '<p class="hint">Haz clic sobre un objeto del modelo para ver su clase IFC, nivel, material y propiedades.</p>'; return; }
+  const base = [['Clase IFC', p.c], ['Tipo', p.t], ['Nivel', p.s], ['Material', p.m], ['GlobalId', guid]].filter(r => r[1]);
+  const fmt = v => typeof v === 'number' ? `<td class="num">${esc(v.toLocaleString('es-CL'))}</td>` : `<td>${esc(v === true ? 'Sí' : v === false ? 'No' : v)}</td>`;
+  let h = `<div class="card"><div class="k">${esc(ES[p.c] || p.c)}</div><div class="big">${esc(p.n || '(sin nombre)')}</div><table>${base.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</table>`;
+  for (const [ps, d] of Object.entries(p.p || {})){
+    const rows = Object.entries(d); if (!rows.length) continue;
+    h += `<div class="ps">${esc(ps)}</div><table>${rows.map(([k, v]) => `<tr><td>${esc(k)}</td>${fmt(v)}</tr>`).join('')}</table>`;
+  }
+  $('props').innerHTML = h + '</div>';
+}
+function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); }
+resize(); loop();
+const start = MODELS.find(m => '#' + m.id === location.hash) || MODELS[0];
+load(start.id);
+}
+</script>
+</body>
+</html>
