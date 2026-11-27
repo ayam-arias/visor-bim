@@ -1,256 +1,142 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Visor BIM GeoIAN</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-/* VOICE: herramienta de laboratorio, clara y directa, para estudiantes de topografía
-   IDEA: la mesa de un visor BIM profesional: modelo al centro, árbol de clases a la izquierda, ficha IFC a la derecha
-   PICTURE: el propio modelo 3D ocupa casi toda la pantalla
-   COLOUR and TYPE: marca GeoIAN: cian de curvas de nivel #0098B8, naranja IA #E8700A, tinta #10202A; Archivo + Inter
-   LAYOUT: barra de modelos arriba, tres columnas en escritorio; en móvil el visor primero y los paneles debajo */
-:root{color-scheme:light dark;--bg:light-dark(#F4F7F9,#0C1419);--panel:light-dark(#FFFFFF,#142129);--ink:light-dark(#10202A,#E6EEF2);--mute:light-dark(#5B6B75,#93A6B0);--line:light-dark(#DCE4E9,#24343E);--cyan:#0098B8;--orange:#E8700A;--canvas:light-dark(#E9EFF2,#0F1A20)}
-:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
-*{box-sizing:border-box;min-width:0}
-html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif;overflow-x:clip}
-header{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px;font:800 20px/1 Archivo,sans-serif;letter-spacing:.2px}
-.brand b{color:var(--cyan)}.brand i{color:var(--orange);font-style:normal}
-.brand small{font:500 13px Inter;color:var(--mute)}
-.models{display:flex;gap:8px;overflow-x:auto;flex:1;padding:2px}
-.models button{flex:none}
-button,select{font:600 14px Inter,sans-serif;min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
-button:hover{border-color:var(--cyan)}
-button:focus-visible,input:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
-button.on{background:var(--cyan);border-color:var(--cyan);color:#fff}
-button.tool.on{background:var(--orange);border-color:var(--orange)}
-main{display:grid;grid-template-columns:260px minmax(0,1fr) 320px;height:calc(100vh - 62px)}
-aside{background:var(--panel);overflow:auto;padding:14px;border-right:1px solid var(--line)}
-aside.r{border-right:0;border-left:1px solid var(--line)}
-h2{font:700 15px Archivo,sans-serif;margin:4px 0 10px;color:var(--ink)}
-.stage{position:relative;background:var(--canvas)}
-#c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
-.tools{position:absolute;left:12px;top:12px;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 24px)}
-.tools button{background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(4px)}
-.cut{position:absolute;left:12px;bottom:12px;right:12px;display:none;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 14px}
-.cut.show{display:flex}.cut input{flex:1;accent-color:var(--orange)}
-.msg[hidden]{display:none}.msg{position:absolute;inset:0;display:grid;place-items:center;font:600 16px Inter;color:var(--mute);pointer-events:none;text-align:center;padding:20px}
-.cls{display:flex;align-items:center;gap:8px;padding:6px 4px;border-radius:8px;cursor:pointer}
-.cls:hover{background:var(--bg)}
-.cls input{width:18px;height:18px;accent-color:var(--cyan)}
-.sw{width:14px;height:14px;border-radius:4px;flex:none;border:1px solid #0002}
-.cls span.n{margin-left:auto;color:var(--mute);font-variant-numeric:tabular-nums}
-.cls .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.row{display:flex;gap:6px;margin:8px 0 12px;flex-wrap:wrap}
-.row button{flex:1;min-height:36px;font-size:13px}
-.meta{font-size:13px;color:var(--mute);border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
-.meta a{color:var(--cyan)}
-.card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
-.big{font:800 22px/1.1 Archivo,sans-serif;color:var(--cyan);margin:2px 0 4px;overflow-wrap:anywhere}
-.k{color:var(--mute);font-size:12px}
-table{width:100%;border-collapse:collapse;font-size:13px}
-td{padding:5px 4px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
-td:first-child{color:var(--mute);width:45%}
-td.num{text-align:right;font-variant-numeric:tabular-nums}
-.ps{font:700 12px Inter;color:var(--orange);margin:12px 0 4px}
-.measure{font:800 26px Archivo;color:var(--orange)}
-.hint{font-size:13px;color:var(--mute)}
-@media(max-width:900px){main{grid-template-columns:1fr;height:auto}.stage{height:62vh}aside{border:0;border-top:1px solid var(--line)}aside.l{order:2}aside.r{order:3}}
-@media(prefers-reduced-motion:reduce){*{transition:none!important}}
-</style>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Visor BIM · GeoIAN</title>
+<meta name="description" content="Visor BIM en el navegador: abre modelos IFC (2x3, 4 y 4.3), explora clases, niveles y propiedades, corta, mide, simula 4D, cubica 5D, detecta interferencias y aprende BIM paso a paso. Por Ian Arias Carrasco · GeoIAN.">
+<meta name="author" content="Ian Arias Carrasco · GeoIAN">
+<meta property="og:title" content="Visor BIM · GeoIAN">
+<meta property="og:description" content="Abre y aprende BIM en el navegador: IFC, texturas reales, 4D, 5D, LOD, choques y una ruta de primeros pasos.">
+<meta property="og:image" content="https://ayam-arias.github.io/assets/og.jpg">
+<link rel="icon" href="img/geoian-favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/app.css">
+<script type="importmap">{"imports":{"three":"./lib/three/build/three.module.js","three/addons/":"./lib/three/examples/jsm/"}}</script>
 </head>
 <body>
-<header>
-  <div class="brand"><span><b>GEO</b><i>IA</i>N</span><small>Visor BIM · TPO204 AIEP</small></div>
-  <nav class="models" id="models"></nav>
+<header class="top">
+  <div class="in">
+    <a class="brand" href="https://ayam-arias.github.io" title="GeoIAN · Ian Arias Carrasco"><img src="img/geoian-logo-dark.svg" alt="GeoIAN" width="176" height="50"></a>
+    <div class="ttl">
+      <h1>Visor BIM</h1>
+      <p>Explora, mide y aprende BIM en el navegador · IFC 2x3 · IFC 4 · IFC 4.3</p>
+    </div>
+    <nav class="links" aria-label="Enlaces GeoIAN">
+      <a href="https://ayam-arias.github.io" target="_blank" rel="noopener" title="Sitio web"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg></a>
+      <a href="https://www.linkedin.com/in/ian-arias" target="_blank" rel="noopener" title="LinkedIn"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 10v7M8 7v.01M12 17v-4a2 2 0 0 1 4 0v4M12 10v7"/></svg></a>
+      <a href="https://www.instagram.com/_geoia.n" target="_blank" rel="noopener" title="Instagram @_geoia.n"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17 7v.01"/></svg></a>
+      <a href="https://github.com/ayam-arias" target="_blank" rel="noopener" title="GitHub ayam-arias"><svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg></a>
+      <a href="https://ayam-arias.github.io/clasificador-lidar/" target="_blank" rel="noopener" title="Clasificador LiDAR GeoIAN"><svg viewBox="0 0 24 24"><circle cx="6" cy="17" r="1.2"/><circle cx="10" cy="13" r="1.2"/><circle cx="14" cy="15" r="1.2"/><circle cx="18" cy="9" r="1.2"/><circle cx="8" cy="8" r="1.2"/><circle cx="15" cy="6" r="1.2"/></svg></a>
+      <button id="theme" title="Tema claro/oscuro" aria-label="Cambiar tema"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
+    </nav>
+  </div>
 </header>
+
+<div class="modelbar">
+  <div class="in">
+    <span class="mb-l">Modelos</span>
+    <nav class="models" id="models" aria-label="Modelos de ejemplo"></nav>
+    <label class="btn imp" title="Abrir tus propios archivos IFC, GLB o glTF"><input type="file" id="file" accept=".ifc,.glb,.gltf" multiple hidden><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>Abrir IFC</label>
+  </div>
+</div>
+
 <main>
   <aside class="l">
-    <h2>Clases IFC del modelo</h2>
-    <div class="row"><button id="all">Ver todas</button><button id="none">Ocultar todas</button></div>
-    <div class="row"><button id="byClass">Color por clase</button><button id="byMat" class="on">Color real</button></div>
-    <div id="classes"><p class="hint">Elige un modelo arriba.</p></div>
-    <div class="meta" id="meta"></div>
+    <div class="tabs" role="tablist">
+      <button class="on" data-tab="t-modelo">Modelo</button>
+      <button data-tab="t-aprende">Aprende BIM</button>
+      <button data-tab="t-practica">Practica</button>
+    </div>
+    <section id="t-modelo" class="tab on">
+      <h3>Color</h3>
+      <div class="seg wrap" id="colorSeg">
+        <button data-c="tex" class="on" title="Texturas fotográficas según material">Texturas reales</button>
+        <button data-c="ifc" title="Colores guardados en el IFC">Color IFC</button>
+        <button data-c="cls" title="Un color por clase IFC">Por clase</button>
+        <button data-c="disc" title="Un color por disciplina o archivo">Por disciplina</button>
+      </div>
+      <div class="vt">
+        <button class="mini on" data-v="cls">Clases IFC</button><button class="mini" data-v="tree">Árbol espacial</button><button class="mini" data-v="disc">Disciplinas</button>
+      </div>
+      <div class="row"><button class="alt" id="all">Ver todo</button><button class="alt" id="none">Ocultar todo</button></div>
+      <div id="classes"><p class="hint">Elige un modelo arriba.</p></div>
+      <div class="meta" id="meta"></div>
+    </section>
+    <section id="t-aprende" class="tab"></section>
+    <section id="t-practica" class="tab"></section>
   </aside>
-  <section class="stage">
+
+  <section class="stage" id="stage">
     <canvas id="c"></canvas>
-    <div class="tools">
-      <button id="home" title="Volver a la vista inicial">Vista inicial</button>
-      <button id="top" title="Ver en planta">Planta</button>
-      <button id="cutBtn" class="tool" title="Corte horizontal">Corte</button>
-      <button id="measBtn" class="tool" title="Medir distancia entre dos puntos">Medir</button>
-      <button id="xray" class="tool" title="Transparencia">Rayos X</button>
+    <div class="tools" role="toolbar" aria-label="Herramientas">
+      <button id="home" title="Vista inicial"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg><span>Inicio</span></button>
+      <button id="top" title="Vista en planta"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 12h16M12 4v16"/></svg><span>Planta</span></button>
+      <button id="cutBtn" class="tool" title="Corte horizontal"><svg viewBox="0 0 24 24"><path d="M3 12h18M6 8l-3 4 3 4M18 8l3 4-3 4"/></svg><span>Corte</span></button>
+      <button id="measBtn" class="tool" title="Medir distancia"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Medir</span></button>
+      <button id="xray" class="tool" title="Rayos X"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z" stroke-dasharray="3 2"/></svg><span>Rayos X</span></button>
+      <button id="cadBtn" class="tool" title="Ver como CAD: solo líneas"><svg viewBox="0 0 24 24"><path d="M4 18L12 4l8 14z M8 11h8"/></svg><span>Vista CAD</span></button>
+      <div class="lodbox" title="Nivel de desarrollo (LOD) de la representación"><span>LOD</span><select id="lod"><option value="300">300 real</option><option value="200">200 genérico</option><option value="100">100 volumen</option></select></div>
+      <button id="shot" title="Guardar captura PNG con marca GeoIAN"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l2-3h4l2 3"/></svg><span>Captura</span></button>
+      <button id="fs" title="Pantalla completa"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
     </div>
     <div class="cut" id="cut"><span>Altura de corte</span><input type="range" id="cutH" min="0" max="1000" value="1000"><span id="cutV">—</span></div>
+    <div class="hover" id="hover" hidden></div>
     <div class="msg" id="msg">Cargando visor…</div>
+    <div class="dropzone" id="dropzone"><div><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg><b>Suelta aquí tus archivos IFC, GLB o glTF</b><span>Se abren en tu computador: no se suben a ningún servidor.</span></div></div>
+    <div class="tour" id="tour" hidden></div>
+    <div class="legend" id="legend" hidden></div>
   </section>
+
   <aside class="r">
-    <h2>Ficha del elemento</h2>
-    <div id="props"><p class="hint">Haz clic sobre un objeto del modelo para ver su clase IFC, nivel, material y propiedades.</p></div>
-    <div class="card" id="measCard" hidden><div class="k">Distancia medida</div><div class="measure" id="measV">—</div><div class="hint" id="measD"></div></div>
-    <div class="card"><div class="k">Cómo se usa</div><p class="hint" style="margin:4px 0 0">Girar: clic izquierdo y arrastrar · Desplazar: clic derecho · Zoom: rueda. En el celular: un dedo gira, dos dedos acercan y desplazan.</p></div>
+    <div class="tabs" role="tablist">
+      <button class="on" data-tab="r-ficha">Ficha</button>
+      <button data-tab="r-4d">4D</button>
+      <button data-tab="r-5d">5D</button>
+      <button data-tab="r-clash">Choques</button>
+    </div>
+    <section id="r-ficha" class="tab on">
+      <div class="card" id="measCard" hidden><div class="k">Distancia medida</div><div class="measure" id="measV">—</div><div class="hint" id="measD"></div></div>
+      <div id="props"></div>
+      <div class="card soft"><div class="k">Cómo se usa</div><p class="hint">Girar: clic izquierdo y arrastrar · Desplazar: clic derecho · Zoom: rueda · Doble clic: acercar al objeto. Celular: un dedo gira, dos dedos acercan y desplazan.</p></div>
+    </section>
+    <section id="r-4d" class="tab">
+      <h3>4D · Simulación de obra</h3>
+      <p class="hint">Modelo 3D + secuencia constructiva. Cada fase agrupa clases IFC en el orden en que se construyen.</p>
+      <div class="row"><button id="p4play">▶ Reproducir</button><button class="alt" id="p4off">Ver obra terminada</button></div>
+      <input type="range" id="p4" min="0" max="8" value="8" class="full">
+      <div class="big" id="p4lbl">Obra terminada</div>
+      <ol class="phases" id="p4list"></ol>
+    </section>
+    <section id="r-5d" class="tab">
+      <h3>5D · Cubicación y presupuesto</h3>
+      <p class="hint">Cantidades leídas de las propiedades del modelo (Psets y Qto). Escribe tu precio unitario en pesos y el total se calcula solo.</p>
+      <div class="row"><button id="q5calc">Calcular cantidades</button><button class="alt" id="q5demo" title="Precios ficticios solo para practicar">Precios de ejemplo</button><button class="alt" id="q5csv">Exportar CSV</button></div>
+      <div id="q5"></div>
+    </section>
+    <section id="r-clash" class="tab">
+      <h3>Coordinación · Detección de choques</h3>
+      <p class="hint">Busca elementos de <b>distintas disciplinas</b> que ocupan el mismo espacio. Método docente en dos etapas: filtro por cajas envolventes y confirmación geométrica (aristas que atraviesan caras o puntos dentro de ambos sólidos). Revisa cada caso: puede ser un choque real o una superposición tolerable.</p>
+      <label class="chk"><span>Tolerancia</span><select id="clTol"><option value="0.01">1 cm</option><option value="0.05" selected>5 cm</option><option value="0.10">10 cm</option></select></label>
+      <div class="row"><button id="clRun">Detectar interferencias</button><button class="alt" id="clClear">Limpiar</button></div>
+      <div id="clRes"></div>
+    </section>
   </aside>
 </main>
-<script type="importmap">
-{"imports":{"three":"./lib/three/build/three.module.js","three/addons/":"./lib/three/examples/jsm/"}}
-</script>
-<script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-{
-const MODELS = [
-  { id:'duplex', name:'Dúplex (Revit · IFC2x3)', files:['duplex'], src:'Modelo de muestra Duplex Apartment (proyecto de referencia usado por buildingSMART y NIBS), exportado desde Revit.' },
-  { id:'casa', name:'Casa (IFC4)', files:['casa_ifc4'], src:'Casa de muestra IFC4 (colección IfcSampleFiles, GitHub).' },
-  { id:'fed', name:'Proyecto federado (IFC 4.3)', files:['ss_building_architecture','ss_building_structural','ss_building_hvac','ss_building_landscaping','ss_infra_bridge','ss_infra_road','ss_infra_rail','ss_infra_plumbing','ss_infra_electrical'], src:'buildingSMART International, IFC 4.3 Sample "Simple Scene": casa, terreno, camino, puente, ferrocarril, alcantarillado y electricidad.' },
-  { id:'revit', name:'Edificio Revit ARQ + EST (pesado)', files:['revit_arc','revit_str'], color:'cls', src:'Modelo de muestra de Autodesk Revit exportado a IFC4, arquitectura y estructura (colección IfcSampleFiles, GitHub).' },
-  { id:'aromos', name:'Los Aromos (curso)', files:['losaromos'], color:'cls', src:'Modelo propio del curso: nube LiDAR clasificada de la clase 10 convertida en MDT y volúmenes LOD1.' },
-];
-const ES = {IfcWall:'Muro',IfcWallStandardCase:'Muro',IfcSlab:'Losa',IfcWindow:'Ventana',IfcDoor:'Puerta',IfcRoof:'Techo',IfcBeam:'Viga',IfcColumn:'Columna',IfcFooting:'Fundación',IfcMember:'Elemento lineal',IfcPlate:'Placa',IfcCovering:'Revestimiento',IfcRailing:'Baranda',IfcStair:'Escalera',IfcStairFlight:'Tramo de escalera',IfcFurniture:'Mobiliario',IfcFurnishingElement:'Mobiliario',IfcDuctSegment:'Ducto',IfcAirTerminal:'Difusor de aire',IfcPipeSegment:'Tubería',IfcDistributionChamberElement:'Cámara',IfcChimney:'Chimenea',IfcEarthworksFill:'Relleno de tierra',IfcGeographicElement:'Terreno / elemento geográfico',IfcBuildingElementProxy:'Elemento genérico',IfcCourse:'Capa de pavimento',IfcRoadPart:'Parte de camino',IfcSurfaceFeature:'Demarcación',IfcTrackElement:'Elemento de vía',IfcRail:'Riel',IfcSign:'Señal',IfcElectricAppliance:'Equipo eléctrico',IfcDiscreteAccessory:'Accesorio',IfcFlowTerminal:'Terminal',IfcFlowSegment:'Segmento de flujo',IfcBearing:'Apoyo',IfcPile:'Pilote',IfcRamp:'Rampa'};
-const PAL = ['#0098B8','#E8700A','#6A1B9A','#1E88E5','#C2185B','#00897B','#8D6E63','#5C6BC0','#D81B60','#43A047','#F4511E','#546E7A','#7CB342','#3949AB','#FB8C00','#26A69A'];
-const $ = id => document.getElementById(id);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const canvas = $('c'), stage = canvas.parentElement;
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-renderer.localClippingEnabled = true;
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100000);
-const controls = new OrbitControls(camera, canvas); controls.enableDamping = true;
-scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.6));
-const sun = new THREE.DirectionalLight(0xffffff, 1.4); sun.position.set(1, 2, 1.5); scene.add(sun);
-const clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6);
-let root = null, props = {}, byClass = {}, classColor = {}, colorMode = 'mat', selected = null, box = null, home = null;
-const loader = new GLTFLoader();
-const selMat = new THREE.MeshStandardMaterial({ color: 0xE8700A, emissive: 0x552200, side: THREE.DoubleSide, clippingPlanes: [clip] });
 
-function resize(){ const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
-const ro = new ResizeObserver(resize); ro.observe(stage);
-
-$('models').innerHTML = MODELS.map(m => `<button data-id="${m.id}">${esc(m.name)}</button>`).join('');
-$('models').addEventListener('click', e => { const b = e.target.closest('button'); if (b) load(b.dataset.id); });
-
-async function load(id){
-  const M = MODELS.find(m => m.id === id);
-  document.querySelectorAll('#models button').forEach(b => b.classList.toggle('on', b.dataset.id === id));
-  $('msg').textContent = 'Cargando ' + M.name + '…'; $('msg').hidden = false;
-  if (root){ scene.remove(root); root.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
-  root = new THREE.Group(); scene.add(root); props = {}; byClass = {}; selected = null; showProps(null);
-  const meta = [];
-  try {
-    for (const f of M.files){
-      const [g, j] = await Promise.all([fetch('data/' + f + '.gltf.json').then(r => r.text()).then(t => loader.parseAsync(t, '')), fetch('data/' + f + '.json').then(r => r.json())]);
-      Object.assign(props, j.el); meta.push(j.meta);
-      g.scene.traverse(o => {
-        if (!o.isMesh) return;
-        if (!o.geometry.attributes.normal) o.geometry.computeVertexNormals();
-        const guid = props[o.name] ? o.name : (props[o.parent?.name] ? o.parent.name : o.name);
-        const p = props[guid] || { c: 'Desconocido', n: '' };
-        o.userData.guid = guid; o.userData.cls = p.c;
-        const glass = /Window|Plate/.test(p.c);
-        o.userData.mat = new THREE.MeshStandardMaterial({ vertexColors: !!o.geometry.attributes.color, color: o.geometry.attributes.color ? 0xffffff : 0xcfd8dc, roughness: .85, metalness: 0, side: THREE.DoubleSide, transparent: glass, opacity: glass ? .45 : 1, clippingPlanes: [clip], polygonOffset: true, polygonOffsetFactor: 1 });
-        o.material = o.userData.mat;
-        (byClass[p.c] ||= []).push(o);
-      });
-      root.add(g.scene);
-    }
-  } catch (err) { $('msg').textContent = 'No se pudo cargar el modelo. Revisa tu conexión y recarga la página.'; return; }
-  box = new THREE.Box3().setFromObject(root); const c = box.getCenter(new THREE.Vector3());
-  root.position.sub(c); box = new THREE.Box3().setFromObject(root);
-  Object.keys(byClass).sort().forEach((k, i) => classColor[k] ||= PAL[Object.keys(classColor).length % PAL.length]);
-  colorMode = M.color || 'mat'; $('byClass').classList.toggle('on', colorMode === 'cls'); $('byMat').classList.toggle('on', colorMode !== 'cls');
-  renderClasses(); applyColors(); fit(); setCut();
-  const total = Object.values(byClass).reduce((a, b) => a + b.length, 0);
-  $('meta').innerHTML = `<b>${total}</b> elementos · ${esc([...new Set(meta.map(m => m.schema))].join(', '))}<br>${esc(M.src)}`;
-  $('msg').hidden = true;
-}
-
-function renderClasses(){
-  const ks = Object.keys(byClass).sort((a, b) => byClass[b].length - byClass[a].length);
-  $('classes').innerHTML = ks.map(k => `<label class="cls"><input type="checkbox" checked data-c="${esc(k)}"><span class="sw" style="background:${classColor[k]}"></span><span class="lbl" title="${esc(k)}">${esc(ES[k] || k.replace('Ifc',''))}<br><span class="k">${esc(k)}</span></span><span class="n">${byClass[k].length}</span></label>`).join('');
-}
-$('classes').addEventListener('change', e => { const c = e.target.dataset.c; if (c) byClass[c].forEach(o => o.visible = e.target.checked); });
-$('all').onclick = () => setAll(true); $('none').onclick = () => setAll(false);
-function setAll(v){ document.querySelectorAll('#classes input').forEach(i => i.checked = v); Object.values(byClass).flat().forEach(o => o.visible = v); }
-$('byClass').onclick = () => { colorMode = 'cls'; $('byClass').classList.add('on'); $('byMat').classList.remove('on'); applyColors(); };
-$('byMat').onclick = () => { colorMode = 'mat'; $('byMat').classList.add('on'); $('byClass').classList.remove('on'); applyColors(); };
-const clsMats = {};
-function applyColors(){
-  const xr = $('xray').classList.contains('on');
-  for (const [k, list] of Object.entries(byClass)) for (const o of list){
-    if (o === selected) continue;
-    let m = o.userData.mat;
-    if (colorMode === 'cls'){ m = clsMats[k] ||= new THREE.MeshStandardMaterial({ color: classColor[k], roughness: .8, side: THREE.DoubleSide, clippingPlanes: [clip], polygonOffset: true, polygonOffsetFactor: 1 }); }
-    if (xr){ m = m.clone(); m.transparent = true; m.opacity = .18; m.depthWrite = false; }
-    o.material = m;
-  }
-}
-$('xray').onclick = () => { $('xray').classList.toggle('on'); applyColors(); };
-
-function fit(dir = new THREE.Vector3(1, .8, 1.2)){
-  const s = box.getSize(new THREE.Vector3()), r = Math.max(s.x, s.y, s.z) || 10, c = box.getCenter(new THREE.Vector3());
-  camera.near = r / 1000; camera.far = r * 50; camera.updateProjectionMatrix();
-  camera.position.copy(c).add(dir.normalize().multiplyScalar(r * 1.4)); controls.target.copy(c); controls.update();
-}
-$('home').onclick = () => box && fit();
-$('top').onclick = () => box && fit(new THREE.Vector3(0.001, 1, 0.001));
-
-$('cutBtn').onclick = () => { const on = $('cutBtn').classList.toggle('on'); $('cut').classList.toggle('show', on); if (!on){ $('cutH').value = 1000; } setCut(); };
-$('cutH').oninput = setCut;
-function setCut(){
-  if (!box) return; const t = $('cutH').value / 1000; const y = box.min.y + (box.max.y - box.min.y) * t;
-  clip.constant = $('cutBtn').classList.contains('on') ? y : 1e6;
-  $('cutV').textContent = (y - box.min.y).toFixed(2) + ' m';
-}
-
-// selección y medición
-const ray = new THREE.Raycaster(), ptr = new THREE.Vector2(); let down = null, measuring = false, mpts = [], mObjs = [];
-$('measBtn').onclick = () => { measuring = $('measBtn').classList.toggle('on'); clearMeasure(); $('measCard').hidden = !measuring; $('measV').textContent = '—'; $('measD').textContent = measuring ? 'Haz clic en el primer punto.' : ''; };
-canvas.addEventListener('pointerdown', e => down = [e.clientX, e.clientY]);
-canvas.addEventListener('pointerup', e => {
-  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5 || !root) return;
-  const r = canvas.getBoundingClientRect(); ptr.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
-  ray.setFromCamera(ptr, camera);
-  const hit = ray.intersectObjects(root.children, true).find(h => h.object.visible && h.object.isMesh && (h.point.y <= clip.constant + 1e-6));
-  if (measuring){ if (hit) addMeasure(hit.point); return; }
-  select(hit ? hit.object : null);
-});
-function marker(p){ const s = Math.max(...box.getSize(new THREE.Vector3()).toArray()) / 150; const m = new THREE.Mesh(new THREE.SphereGeometry(s, 16, 12), new THREE.MeshBasicMaterial({ color: 0xE8700A, depthTest: false })); m.position.copy(p); m.renderOrder = 9; scene.add(m); mObjs.push(m); }
-function addMeasure(p){
-  if (mpts.length === 2) clearMeasure();
-  mpts.push(p.clone()); marker(p);
-  if (mpts.length === 2){
-    const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(mpts), new THREE.LineBasicMaterial({ color: 0xE8700A, depthTest: false })); l.renderOrder = 9; scene.add(l); mObjs.push(l);
-    const d = mpts[0].distanceTo(mpts[1]), dz = Math.abs(mpts[1].y - mpts[0].y), dh = Math.hypot(mpts[1].x - mpts[0].x, mpts[1].z - mpts[0].z);
-    $('measV').textContent = d.toFixed(3) + ' m'; $('measD').textContent = `Horizontal ${dh.toFixed(3)} m · Desnivel ${dz.toFixed(3)} m`;
-  } else $('measD').textContent = 'Ahora el segundo punto.';
-}
-function clearMeasure(){ mObjs.forEach(o => scene.remove(o)); mObjs = []; mpts = []; }
-
-function select(o){
-  if (selected){ const s = selected; selected = null; applyColors(); }
-  selected = o; if (o) o.material = selMat; showProps(o ? props[o.userData.guid] : null, o?.userData.guid);
-}
-function showProps(p, guid){
-  if (!p){ $('props').innerHTML = '<p class="hint">Haz clic sobre un objeto del modelo para ver su clase IFC, nivel, material y propiedades.</p>'; return; }
-  const base = [['Clase IFC', p.c], ['Tipo', p.t], ['Nivel', p.s], ['Material', p.m], ['GlobalId', guid]].filter(r => r[1]);
-  const fmt = v => typeof v === 'number' ? `<td class="num">${esc(v.toLocaleString('es-CL'))}</td>` : `<td>${esc(v === true ? 'Sí' : v === false ? 'No' : v)}</td>`;
-  let h = `<div class="card"><div class="k">${esc(ES[p.c] || p.c)}</div><div class="big">${esc(p.n || '(sin nombre)')}</div><table>${base.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</table>`;
-  for (const [ps, d] of Object.entries(p.p || {})){
-    const rows = Object.entries(d); if (!rows.length) continue;
-    h += `<div class="ps">${esc(ps)}</div><table>${rows.map(([k, v]) => `<tr><td>${esc(k)}</td>${fmt(v)}</tr>`).join('')}</table>`;
-  }
-  $('props').innerHTML = h + '</div>';
-}
-function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); }
-resize(); loop();
-const start = MODELS.find(m => '#' + m.id === location.hash) || MODELS[0];
-load(start.id);
-}
-</script>
+<footer class="foot">
+  <div class="in">
+    <div class="fbrand"><img src="img/geoian-favicon.svg" alt="" width="40" height="40"><div><b>GeoIAN</b> · Ian Arias Carrasco<br><span>Ingeniero en Geomensura y Cartografía · Geomática, LiDAR, BIM e IA aplicada</span></div></div>
+    <div class="flinks">
+      <a href="https://ayam-arias.github.io" target="_blank" rel="noopener">ayam-arias.github.io</a>
+      <a href="https://www.linkedin.com/in/ian-arias" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://www.instagram.com/_geoia.n" target="_blank" rel="noopener">Instagram @_geoia.n</a>
+      <a href="https://github.com/ayam-arias/visor-bim" target="_blank" rel="noopener">Código en GitHub</a>
+      <a href="mailto:ian.arias.carrasco@gmail.com">ian.arias.carrasco@gmail.com</a>
+    </div>
+    <p class="fnote">Todo ocurre en tu navegador: los archivos que abres no se suben a ningún servidor. Modelos de ejemplo: buildingSMART International (IFC 4.3 "Simple Scene") y colección IfcSampleFiles; Los Aromos es un modelo propio del curso. Texturas fotográficas: <a href="https://ambientcg.com" target="_blank" rel="noopener">ambientCG</a> (CC0) y <a href="https://polyhaven.com" target="_blank" rel="noopener">Poly Haven</a> (CC0), y three.js (MIT); hormigón, yeso y cubierta son derivados de una foto de Poly Haven. Logos: <a href="https://simpleicons.org" target="_blank" rel="noopener">Simple Icons</a> (CC0); las marcas pertenecen a sus dueños y se usan solo para identificar cada software. Motor: <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> (MIT) y <a href="https://github.com/ThatOpen/engine_web-ifc" target="_blank" rel="noopener">web-ifc</a> (MPL-2.0). © 2026 Ian Arias Carrasco · GeoIAN · Código abierto (MIT).</p>
+  </div>
+</footer>
+<div id="toast" role="status"></div>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>
